@@ -15,9 +15,7 @@ These are the open-source packages from [Copy Pasta Formaggi](https://copypastaf
 | `@copy-pasta/adapter-reference` | Reference adapter implementation (plain text decode/encode) — use as a template for custom adapters |
 | `@copy-pasta/eslint-config` | Shared ESLint configuration for all packages |
 
-## What's NOT in This Repo
-
-The core conversion engine and all production adapters (Slack, Gmail, Notion, Discord, Teams, Telegram, WhatsApp, ChatGPT, Claude, etc.) are **closed source** and live in the private [copy-pasta-formaggi](https://github.com/Alpakash/copy-pasta-formaggi) repository.
+The full app with all production adapters is available at [copypastaformaggi.com](https://copypastaformaggi.com). These packages are the open-source foundation you can use to build custom integrations, write your own adapters, or embed UCF in other tools.
 
 ## Getting Started
 
@@ -56,6 +54,5 @@ MIT — see [LICENSE](LICENSE).
 ## Links
 
 - [Copy Pasta Formaggi](https://copypastaformaggi.com) — download the app
-- [Private repository](https://github.com/Alpakash/copy-pasta-formaggi) — note: requires authorization
 - [Contributing Guide](CONTRIBUTING.md) — how to write adapters
-- [Report an issue](https://github.com/Alpakash/copy-pasta-ucf/issues) — for open-source packages only
+- [Report an issue](https://github.com/Alpakash/copy-pasta-ucf/issues)
