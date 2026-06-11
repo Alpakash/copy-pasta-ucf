@@ -1,0 +1,21 @@
+{
+  "name": "@copy-pasta/detectors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@copy-pasta/eslint-config": "workspace:^",
+    "@copy-pasta/fixtures": "workspace:^",
+    "typescript": "^5.5.4",
+    "vitest": "^1.6.0"
+  }
+}

@@ -1,0 +1,46 @@
+# Node/JS workspace
+node_modules/
+dist/
+.pnp.cjs
+.pnp.loader.mjs
+*.tsbuildinfo
+.vscode/
+.DS_Store
+coverage/
+.temp/
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+apps/desktop/.debug/
+apps/desktop/debug/
+# local debug artifacts (tauri/dev runs)
+apps/desktop/apps/
+!packages/
+!packages/**
+packages/**/node_modules/
+packages/**/dist/
+
+# Local experiments
+patches/
+
+# Generated during Tauri build
+apps/desktop/src-tauri/icons/icon.png
+
+# Local updater signing keys
+apps/desktop/keys/
+
+# Local tools and debug
+.continue/
+*.pem
+windsurf_config.yaml
+apps/desktop/*.log
+apps/desktop/*.txt
+**/.cargo/
+
+# CI build counter
+.build-counter
+
+# macOS iCloud conflict copies (files with " 2" or " 3" suffix)
+*" 2".*
+*" 3".*
+*" "*/
+icons.bak/

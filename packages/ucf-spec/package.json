@@ -1,0 +1,19 @@
+{
+  "name": "@copy-pasta/ucf-spec",
+  "version": "0.1.0-beta.1",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": "./src/index.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint \"src/**/*.ts\""
+  },
+  "devDependencies": {
+    "@copy-pasta/eslint-config": "workspace:^",
+    "typescript": "^5.5.4"
+  }
+}
