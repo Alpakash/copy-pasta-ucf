@@ -1,117 +1,358 @@
 # Contributing to Copy Pasta Formaggi
 
-Thanks for your interest in contributing. This guide covers how to write a UCF adapter — the core building block that adds support for a new source or target format.
+Thanks for your interest in contributing. This guide walks you through writing a UCF adapter — the building block that adds support for a new format.
 
-## What is a UCF Adapter?
+---
 
-A UCF adapter translates between a specific format (Markdown, HTML, Slack mrkdwn, etc.) and the [Unified Canonical Format (UCF)](https://github.com/Alpakash/copy-pasta-ucf). Each adapter has two functions:
+## Quick Start: Build Your First Adapter in 5 Minutes
 
-- **Decode:** Parse a formatted string into a `UcfDocument`
-- **Encode:** Serialize a `UcfDocument` back to a formatted string
+This section gives you a working adapter you can copy, run, and modify. We'll build a **Markdown-to-UCF decoder** together.
 
-The UCF is the intermediate representation that sits between all formats. Once a format has a decoder and encoder, it can convert to and from every other supported format.
-
-## Getting Started
-
-### 1. Install the UCF spec
+### Step 1 — Install the dependencies
 
 ```bash
-npm install @copy-pasta/ucf-spec
+mkdir my-adapter && cd my-adapter
+pnpm init
+pnpm add @copy-pasta/ucf-spec @copy-pasta/detectors
+pnpm add -D typescript vitest @copy-pasta/eslint-config
 ```
 
-This package provides the TypeScript types you need: `UcfDocument`, `UcfBlock`, `UcfInline`, and all their variants.
+### Step 2 — Create the decoder
 
-### 2. Study the reference adapter
-
-The [adapter-reference](https://github.com/Alpakash/copy-pasta-ucf/tree/main/packages/adapter-reference) package in the public mirror repo contains a minimal plain-text adapter with tests. It demonstrates the canonical decode/encode pattern.
-
-### 3. Implement your adapter
-
-Create a new file (e.g., `my-format-adapter.ts`) with this structure:
+Create `src/decode.ts`:
 
 ```typescript
-import type { UcfDocument } from "@copy-pasta/ucf-spec";
-
-export const FORMAT_KEY = "my-format" as const;
+import type { UcfDocument, UcfBlock, UcfInline } from "@copy-pasta/ucf-spec";
+import { UCF_VERSION } from "@copy-pasta/ucf-spec";
 
 /**
- * Decode a formatted string into a UcfDocument.
+ * Decode a Markdown string into a UcfDocument.
+ *
+ * This is a minimal decoder. It supports:
+ *   - Paragraphs (separated by blank lines)
+ *   - Bold (**text**)
+ *   - Italic (*text*)
+ *   - Inline code (`text`)
  */
-export function decode(input: string): UcfDocument {
-  // Parse the input string and build a UcfDocument tree.
-  // Return an empty document (no blocks) for empty input.
-  // Throw on irrecoverable parse errors.
+export function decodeMarkdown(input: string): UcfDocument {
+  if (!input.trim()) return { version: UCF_VERSION, blocks: [] };
+
+  const blocks: UcfBlock[] = [];
+
+  // Split on blank lines to get paragraphs
+  const paragraphs = input.trim().split(/\n\n+/);
+
+  for (const paraText of paragraphs) {
+    const inlines = parseInlineMarkdown(paraText.replace(/\n/g, " "));
+    blocks.push({ type: "paragraph", children: inlines });
+  }
+
+  return { version: UCF_VERSION, blocks };
 }
 
-/**
- * Encode a UcfDocument back to a formatted string.
- */
-export function encode(doc: UcfDocument): string {
-  // Walk the UcfDocument tree and produce the output string.
-  // Strip unrecognized block types (don't crash on them).
-  // Return "" for an empty document.
+function parseInlineMarkdown(text: string): UcfInline[] {
+  const result: UcfInline[] = [];
+  // Match: **bold**, *italic*, `code`, or plain text
+  const regex = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`(.+?)`)|([^*`]+)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match[1]) {
+      // **bold**
+      result.push({ type: "text", text: match[2], marks: [{ type: "bold" }] });
+    } else if (match[3]) {
+      // *italic*
+      result.push({ type: "text", text: match[4], marks: [{ type: "italic" }] });
+    } else if (match[5]) {
+      // `code`
+      result.push({ type: "inlineCode", text: match[6] });
+    } else if (match[7]) {
+      // plain text
+      result.push({ type: "text", text: match[7] });
+    }
+  }
+
+  return result;
 }
 ```
 
-### 4. Write tests
+### Step 3 — Write a test
 
-Tests verify correctness and prevent regressions. Write at minimum:
+Create `src/decode.test.ts`:
 
-- **Empty input:** decode("") returns an empty document
-- **Roundtrip:** encode(decode(input)) produces a semantically equivalent output
-- **Known fixtures:** specific input strings produce expected `UcfDocument` structures
-- **Edge cases:** nested structures, unusual whitespace, Unicode characters
+```typescript
+import { describe, it, expect } from "vitest";
+import { decodeMarkdown } from "./decode";
 
-### 5. Register your adapter
+describe("decodeMarkdown", () => {
+  it("handles empty input", () => {
+    const result = decodeMarkdown("");
+    expect(result.blocks).toHaveLength(0);
+  });
 
-Once your adapter is ready, add it to the engine's decoder/encoder maps in the main repository. Open a pull request with:
+  it("decodes a plain paragraph", () => {
+    const result = decodeMarkdown("Hello world");
+    expect(result.blocks[0].type).toBe("paragraph");
+    expect(result.blocks[0].children[0]).toEqual({
+      type: "text",
+      text: "Hello world",
+    });
+  });
 
-- Your adapter implementation and tests
-- Evidence of roundtrip correctness
-- A note about any known limitations
+  it("decodes bold text", () => {
+    const result = decodeMarkdown("**bold** text");
+    const children = result.blocks[0].children;
+    expect(children[0]).toEqual({
+      type: "text",
+      text: "bold",
+      marks: [{ type: "bold" }],
+    });
+    expect(children[1]).toEqual({ type: "text", text: " text" });
+  });
 
-## Design Principles
+  it("decodes multiple paragraphs", () => {
+    const result = decodeMarkdown("First\n\nSecond");
+    expect(result.blocks).toHaveLength(2);
+  });
+});
+```
 
-### Decoders must be lossy-tolerant
+### Step 4 — Run the tests
 
-Real-world input is messy. A decoder should parse what it can and skip what it can't. Never throw on malformed input — return a best-effort document instead. Only throw on truly irrecoverable states.
+```bash
+pnpm vitest run
+```
 
-### Encoders must never crash
+You now have a working Markdown decoder. Replace `decodeMarkdown` with your own format, add an encoder, and you've built a UCF adapter.
 
-An encoder receives a canonical UCF document that may contain block types it doesn't recognize (from other formats). Strip them silently. Never throw because of an unknown block or inline type.
+---
 
-### Determinism is non-negotiable
+## Understanding UCF (Unified Canonical Format)
 
-The same input must always produce the same output. No randomness, no timestamps, no external state. This is what makes golden-fixture testing possible.
+UCF is the intermediate document model. Instead of writing N×M converters between every pair of formats, you write **one decoder** (your format → UCF) and **one encoder** (UCF → your format).
 
-### Preserve what you can, strip what you must
+```
+Your format ──[decode]──>  UCF  ──[encode]──> Any other format
+```
 
-If a format supports bold text, encode it. If it doesn't, strip the bold annotation but keep the text content. Data loss is acceptable — data corruption is not.
-
-## UCF Document Structure
-
-A `UcfDocument` is a tree:
+### Document Tree
 
 ```
 UcfDocument
-  └─ blocks: UcfBlock[]
-       ├─ UcfParagraph { inlines: UcfInline[] }
-       ├─ UcfHeading { level: 1-6, inlines: UcfInline[] }
-       ├─ UcfList { ordered, items: UcfListItem[] }
-       ├─ UcfCodeBlock { language?, lines: string[] }
-       ├─ UcfBlockQuote { blocks: UcfBlock[] }
-       └─ UcfDivider
+├── version: "0.2"
+└── blocks: UcfBlock[]
+    ├── UcfParagraph      { type: "paragraph",   children: UcfInline[] }
+    ├── UcfHeading        { type: "heading",     level: 1-6, children: UcfInline[] }
+    ├── UcfList           { type: "list",        ordered: bool, items: UcfListItem[] }
+    │   └── UcfListItem   { type: "listItem",    level: number, blocks: UcfBlock[] }
+    ├── UcfCodeBlock      { type: "codeBlock",   text: string, language?: string }
+    ├── UcfBlockQuote     { type: "blockquote",  blocks: UcfBlock[] }
+    └── UcfDivider        { type: "divider" }
 ```
 
-Inlines:
+### Inline Content
+
 ```
-UcfText { text: string, marks?: UcfInlineMark[] }
-UcfHardBreak
-UcfInlineCode { text: string }
-UcfLink { url: string, inlines: UcfInline[] }
+UcfInline (union):
+├── UcfText        { type: "text",        text: string, marks?: UcfInlineMark[] }
+├── UcfHardBreak   { type: "hardBreak" }
+├── UcfInlineCode  { type: "inlineCode",  text: string }
+└── UcfLink        { type: "link",        href: string, children: UcfInline[] }
+
+UcfInlineMark: "bold" | "italic" | "underline" | "strikethrough"
 ```
 
-For the complete type definitions, see the [@copy-pasta/ucf-spec](https://github.com/Alpakash/copy-pasta-ucf/tree/main/packages/ucf-spec) package.
+Full type definitions: [@copy-pasta/ucf-spec](https://github.com/Alpakash/copy-pasta-ucf/tree/main/packages/ucf-spec)
+
+---
+
+## Architecture: Decoder + Encoder
+
+Every adapter exports two functions:
+
+```typescript
+import type { UcfDocument } from "@copy-pasta/ucf-spec";
+import { UCF_VERSION } from "@copy-pasta/ucf-spec";
+
+export const FORMAT_ID = "my-format" as const;
+
+/**
+ * Decoder: raw input string → UcfDocument
+ *
+ * Rules:
+ *   - Empty/whitespace-only input → return { version: UCF_VERSION, blocks: [] }
+ *   - Malformed input → parse what you can, skip what you can't
+ *   - Only throw on truly unrecoverable states (e.g. binary garbage)
+ */
+export function decode(input: string): UcfDocument {
+  if (!input.trim()) return { version: UCF_VERSION, blocks: [] };
+  // ... parse input into blocks and inlines ...
+  return { version: UCF_VERSION, blocks: [] };
+}
+
+/**
+ * Encoder: UcfDocument → formatted output string
+ *
+ * Rules:
+ *   - Empty document → return ""
+ *   - Unknown block types → strip silently (don't crash)
+ *   - Unsupported inline marks → strip the mark, keep the text
+ *   - Never throw
+ */
+export function encode(doc: UcfDocument): string {
+  if (doc.blocks.length === 0) return "";
+  // ... walk blocks, produce output ...
+  return "";
+}
+```
+
+### Use the reference adapter as your template
+
+Copy the [adapter-reference](https://github.com/Alpakash/copy-pasta-ucf/tree/main/packages/adapter-reference) package. It's a minimal, working plain-text decoder + encoder with tests. Replace the logic with your own format.
+
+---
+
+## Design Rules (READ THIS)
+
+### 1. Decoders: lossy-tolerant
+
+Real-world input is messy. Parse what you can, skip what you can't. Never throw on malformed input.
+
+```typescript
+// Good: graceful fallback
+const blocks = parseWhateverYouCan(dirtyInput);
+
+// Bad: don't do this
+if (!input.startsWith("<valid>")) throw new Error("Invalid format");
+```
+
+### 2. Encoders: never crash
+
+An encoder receives UCF documents that may contain block types from other formats. Strip them silently.
+
+```typescript
+function encodeBlock(block: UcfBlock): string {
+  switch (block.type) {
+    case "paragraph": return encodeParagraph(block);
+    case "heading":   return encodeHeading(block);
+    // ... handle what you support ...
+    default:
+      // Unknown block type — skip it
+      return "";
+  }
+}
+```
+
+### 3. 100% deterministic
+
+Same input → same output. Always. No randomness, no timestamps, no external state. This makes golden-fixture testing reliable.
+
+### 4. Data loss is acceptable, data corruption is not
+
+If your format doesn't support bold, strip the bold mark but **keep the text**. The user's words must survive.
+
+```typescript
+function encodeInline(inline: UcfInline): string {
+  if (inline.type === "text") {
+    return inline.text; // Marks are ignored if unsupported — text is preserved
+  }
+  if (inline.type === "inlineCode") {
+    return inline.text; // Backticks are stripped — text is preserved
+  }
+  // ... etc
+}
+```
+
+---
+
+## Testing Your Adapter
+
+Minimum test coverage:
+
+| Test | What it checks |
+|---|---|
+| Empty input | `decode("")` → `{ blocks: [] }` |
+| Whitespace only | `decode("  \n  ")` → `{ blocks: [] }` |
+| Simple roundtrip | `encode(decode("hello"))` ≈ `"hello"` (semantically equivalent) |
+| Structure | Known input produces expected block types and counts |
+| Inlines | Bold, italic, code, links are correctly parsed |
+| Edge cases | Nested structures, unusual whitespace, Unicode, emoji |
+| Unknown blocks | Encoder doesn't crash on blocks from other formats |
+
+### Test helpers
+
+```typescript
+import { describe, it, expect } from "vitest";
+import type { UcfDocument, UcfParagraph } from "@copy-pasta/ucf-spec";
+
+/** Narrow a UcfBlock to a specific type for safer test assertions */
+function asParagraph(doc: UcfDocument, index = 0): UcfParagraph {
+  const block = doc.blocks[index];
+  if (block.type !== "paragraph") throw new Error(`Expected paragraph, got ${block.type}`);
+  return block;
+}
+
+it("example", () => {
+  const doc = decode("hello");
+  const para = asParagraph(doc);
+  expect(para.children[0]).toEqual({ type: "text", text: "hello" });
+});
+```
+
+---
+
+## Common Pitfalls
+
+**"My adapter works but the app ignores it"**
+
+Adapters must be registered in the engine's adapter map. Community adapters follow a different path than built-in adapters — see [Publishing](#publishing-your-adapter) below.
+
+**"encode(decode(x)) !== x"**
+
+This is expected. Roundtrips are lossy by design. Bold in HTML → plain text drops the bold. What matters is **semantic equivalence** — the meaning is preserved.
+
+**"I'm getting type errors on UcfBlock.children"**
+
+`UcfBlock` is a union type. Only `UcfParagraph` and `UcfHeading` have `children`. Use type narrowing:
+
+```typescript
+if (block.type === "paragraph" || block.type === "heading") {
+  block.children; // ✅ TypeScript knows this is safe
+}
+```
+
+**"My decoder crashes on HTML with weird nesting"**
+
+Remember Rule #1: parse what you can, skip what you can't. Use `try/catch` around risky parsing and fall back to plain text.
+
+---
+
+## Publishing Your Adapter
+
+Community adapters are published as standalone npm packages. You own the package and maintain it.
+
+1. **Name it:** `@your-scope/copy-pasta-adapter-<format>` or `copy-pasta-adapter-<format>`
+2. **Publish to npm:** `pnpm publish --access public`
+3. **Tell us about it:** Open an issue on [copy-pasta-ucf](https://github.com/Alpakash/copy-pasta-ucf/issues) with:
+   - Link to your package
+   - What format(s) it supports
+   - Any known limitations
+4. **We'll list it** in the community adapters section of the README
+
+---
+
+## Checklist Before Submitting
+
+- [ ] Decoder handles empty input (returns `{ blocks: [] }`)
+- [ ] Decoder is lossy-tolerant (never throws on malformed input)
+- [ ] Encoder never crashes on unknown block/inline types
+- [ ] Roundtrip test passes: `encode(decode(input))` produces sensible output
+- [ ] All functions are deterministic (no randomness, no dates, no external state)
+- [ ] Tests cover: empty, simple, edge cases, nested structures
+- [ ] `FORMAT_ID` is defined and unique
+- [ ] Package has a README with install + usage
+
+---
 
 ## Questions?
 
