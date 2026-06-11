@@ -1,6 +1,8 @@
-# Copy Pasta Formaggi — Open Source Packages
+# Copy Pasta Formaggi — Open Source
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+> **Looking for the app?** [Download Copy Pasta Formaggi for macOS](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — copy text anywhere, paste it perfectly.
 
 These are the open-source packages from [Copy Pasta Formaggi](https://copypastaformaggi.com) — a cross-application formatting translator that converts clipboard content between apps so your text looks right no matter where you paste it.
 
@@ -53,6 +55,8 @@ MIT — see [LICENSE](LICENSE).
 
 ## Links
 
-- [Copy Pasta Formaggi](https://copypastaformaggi.com) — download the app
+- [Download the app](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — macOS, free beta
+- [Copy Pasta Formaggi](https://copypastaformaggi.com) — marketing site
 - [Contributing Guide](CONTRIBUTING.md) — how to write adapters
-- [Report an issue](https://github.com/Alpakash/copy-pasta-ucf/issues)
+- [Package issues](https://github.com/Alpakash/copy-pasta-ucf/issues) — bugs in UCF spec, detectors, adapters
+- [App feedback](https://copypastaformaggi.canny.io/feature-requests) — feature requests & app bugs

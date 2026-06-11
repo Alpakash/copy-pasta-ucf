@@ -115,4 +115,5 @@ For the complete type definitions, see the [@copy-pasta/ucf-spec](https://github
 
 ## Questions?
 
-Open an issue on the [public mirror repo](https://github.com/Alpakash/copy-pasta-ucf/issues) or the [main repo](https://github.com/Alpakash/copy-pasta-formaggi/issues). Tag it with `adapter` or `contributing`.
+- **Package issues** (UCF spec, detectors, adapter reference, ESLint config) — open on [copy-pasta-ucf/issues](https://github.com/Alpakash/copy-pasta-ucf/issues)
+- **App bugs & feature requests** — use the [Canny board](https://copypastaformaggi.canny.io/feature-requests) or the in-app Feedback button
