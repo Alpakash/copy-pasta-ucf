@@ -3,6 +3,8 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 > **Looking for the app?** [Download Copy Pasta Formaggi for macOS](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — copy text anywhere, paste it perfectly.
+>
+> **First-time launch:** Right-click the app → **Open**, then click **Open** in the dialog. macOS Gatekeeper blocks unsigned apps — this is a one-time step. (The app is not signed with an Apple Developer ID during the beta.)
 
 These are the open-source packages from [Copy Pasta Formaggi](https://copypastaformaggi.com) — a cross-application formatting translator that converts clipboard content between apps so your text looks right no matter where you paste it.
 
