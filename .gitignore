@@ -44,3 +44,23 @@ apps/desktop/*.txt
 *" 3".*
 *" "*/
 icons.bak/
+
+# Open-source mirror (separate repo)
+mirror/
+
+# Corpus staging — only approved entries/ and manifest.json go to CI
+corpus/inbox/
+corpus/lessons/
+corpus/patches/
+corpus/.last-judge.json
+corpus/.applied-patches.json
+corpus/signals.jsonl
+
+# Local workspace folders
+Projects/
+
+# Environment variables
+.env
+
+# Tauri dev-run corpus duplicates
+apps/desktop/src-tauri/corpus/

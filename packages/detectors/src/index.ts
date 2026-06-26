@@ -1,3 +1,5 @@
+import { type UcfBlock } from "@copy-pasta/core";
+
 export type DetectedFormat = "markdown" | "html" | "plain" | "unknown";
 
 export type DetectionResult = {
@@ -184,9 +186,17 @@ function detectMarkdown(text: string): DetectionResult | null {
     reasons.push("Has Markdown list markers");
   }
 
-  if (bulletSymbolPattern.test(text)) {
-    score += 0.2;
-    reasons.push("Has bullet symbol list markers");
+  const bulletMatches = text.match(new RegExp(bulletSymbolPattern.source, bulletSymbolPattern.flags + "g"));
+  if (bulletMatches && bulletMatches.length >= 2) {
+    score += 0.15;
+    reasons.push("Has multiple bullet symbol list markers");
+  }
+
+  // Only score numbered lists if there are 2+ consecutive numbered items
+  const orderedMatches = text.match(/(^|\n)\s*\d+\.\s+\S+/g);
+  if (orderedMatches && orderedMatches.length >= 2) {
+    score += 0.15;
+    reasons.push("Has multiple ordered list markers");
   }
 
   if (blockquotePattern.test(text)) {
@@ -240,4 +250,91 @@ function detectMarkdown(text: string): DetectionResult | null {
     confidence,
     reasons,
   };
+}
+
+/**
+ * Detect whether a set of decoded UCF blocks looks like PDF-sourced content
+ * that needs line-merge reflow. This is a content-based detector that works
+ * regardless of which PDF app produced the clipboard content.
+ *
+ * Signals:
+ * 1. Many blocks (> 5) with no semantic structure (no headings, lists, tables,
+ *    blockquotes, code blocks, dividers)
+ * 2. Mean paragraph length is short (< 100 chars) — PDF lines are wrapped at
+ *    page width, typically 60-90 chars
+ * 3. Line lengths are clustered (low coefficient of variation) —
+ *    PDF column wraps produce similar-length lines
+ * 4. Few paragraphs end with terminal punctuation (.!?) — wrapped lines
+ *    don't end sentences
+ */
+export function looksLikePdfReflow(blocks: UcfBlock[]): boolean {
+  // Need enough blocks to detect a pattern
+  if (blocks.length < 8) return false;
+
+  // Signal 1: No semantic blocks at all (only paragraphs)
+  const hasNonHeadingSemantic = blocks.some(
+    (b) =>
+      b.type === "list" ||
+      b.type === "table" ||
+      b.type === "blockquote" ||
+      b.type === "codeBlock" ||
+      b.type === "divider"
+  );
+  if (hasNonHeadingSemantic) return false;
+
+  // Only analyze paragraph blocks
+  const paragraphs = blocks.filter((b) => b.type === "paragraph");
+  if (paragraphs.length < 8) return false;
+
+  // Signal 0: Exclude chat/CLI logs — these contain emoji, symbols, or
+  // log-like markers that PDFs never have
+  const hasLogMarkers = paragraphs.some((p) => {
+    const text = p.children
+      .map((c) => (c.type === "text" ? c.text : c.type === "inlineCode" ? c.text : ""))
+      .join("")
+      .trim();
+    // Emoji, log markers, timestamps, status icons
+    return /[✅❌⚠️🔧🔀📸⬆️↩️]|^\[?\d{4}-\d{2}-\d{2}|^──|^Total:|^Passed:|^Failed:/i.test(text);
+  });
+  if (hasLogMarkers) return false;
+
+  // Signal 2: Compute paragraph text lengths
+  const lengths = paragraphs.map((p) => {
+    const text = p.children
+      .map((c) => (c.type === "text" ? c.text : c.type === "inlineCode" ? c.text : ""))
+      .join("");
+    return text.trim().length;
+  });
+
+  const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+  if (mean === 0) return false;
+
+  // Mean should be in the PDF line-width range (30-120 chars)
+  // Raised minimum from 20 to 30 to exclude very short chat messages
+  if (mean < 30 || mean > 120) return false;
+
+  // Signal 3: Line length clustering — compute coefficient of variation
+  const variance =
+    lengths.reduce((sum, len) => sum + Math.pow(len - mean, 2), 0) /
+    lengths.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = stdDev / mean;
+
+  // PDF lines are tightly clustered — lowered threshold from 0.6 to 0.5
+  // to be more conservative
+  if (cv > 0.5) return false;
+
+  // Signal 4: Few paragraphs end with terminal punctuation
+  const terminalPunct = paragraphs.filter((p) => {
+    const text = p.children
+      .map((c) => (c.type === "text" ? c.text : c.type === "inlineCode" ? c.text : ""))
+      .join("")
+      .trim();
+    return /[.!?]$/.test(text);
+  });
+
+  const terminalRatio = terminalPunct.length / paragraphs.length;
+  if (terminalRatio > 0.4) return false;
+
+  return true;
 }

@@ -5,7 +5,9 @@ export type UcfInlineMark =
   | { type: "bold" }
   | { type: "italic" }
   | { type: "underline" }
-  | { type: "strikethrough" };
+  | { type: "strikethrough" }
+  | { type: "superscript" }
+  | { type: "subscript" };
 
 export type UcfText = {
   type: "text";
@@ -27,11 +29,19 @@ export type UcfLink = {
   children: UcfInline[];
 };
 
+export type UcfImage = {
+  type: "image";
+  src: string;
+  alt?: string;
+  title?: string;
+};
+
 export type UcfInline =
   | UcfText
   | UcfHardBreak
   | UcfInlineCode
-  | UcfLink;
+  | UcfLink
+  | UcfImage;
 
 export type UcfParagraph = {
   type: "paragraph";
@@ -70,13 +80,30 @@ export type UcfCodeBlock = {
 
 export type UcfDivider = { type: "divider" };
 
+export type UcfTableCell = {
+  type: "tableCell";
+  children: UcfInline[];
+};
+
+export type UcfTableRow = {
+  type: "tableRow";
+  cells: UcfTableCell[];
+};
+
+export type UcfTable = {
+  type: "table";
+  rows: UcfTableRow[];
+  headerRowCount?: number;
+};
+
 export type UcfBlock =
   | UcfParagraph
   | UcfHeading
   | UcfList
   | UcfCodeBlock
   | UcfBlockQuote
-  | UcfDivider;
+  | UcfDivider
+  | UcfTable;
 
 export type UcfDocument = {
   version: UcfVersion;
