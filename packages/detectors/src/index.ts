@@ -294,7 +294,9 @@ export function looksLikePdfReflow(blocks: UcfBlock[]): boolean {
       .join("")
       .trim();
     // Emoji, log markers, timestamps, status icons
-    return /[✅❌⚠️🔧🔀📸⬆️↩️]|^\[?\d{4}-\d{2}-\d{2}|^──|^Total:|^Passed:|^Failed:/i.test(text);
+    const emojiMarkers = ["✅", "❌", "⚠️", "🔧", "🔀", "📸", "⬆️", "↩️"];
+    return emojiMarkers.some((e) => text.includes(e))
+      || /^\[?\d{4}-\d{2}-\d{2}|^──|^Total:|^Passed:|^Failed:/i.test(text);
   });
   if (hasLogMarkers) return false;
 
