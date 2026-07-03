@@ -340,3 +340,69 @@ export function looksLikePdfReflow(blocks: UcfBlock[]): boolean {
 
   return true;
 }
+
+/**
+ * Strict, signal-free variant of looksLikePdfReflow. Where the base heuristic
+ * needs an explicit PDF signal from the app layer before it may rewrite line
+ * structure, this tier fires on its own — but only on overwhelming evidence:
+ * lines that break mid-sentence and continue in lowercase on the next line.
+ * Poems, lyrics and address blocks are self-contained per line (they start
+ * with capitals), so they never reach the continuation threshold.
+ */
+export function looksLikePdfReflowStrict(blocks: UcfBlock[]): boolean {
+  if (blocks.length < 8) return false;
+  const hasNonHeadingSemantic = blocks.some(
+    (b) =>
+      b.type === "list" ||
+      b.type === "table" ||
+      b.type === "blockquote" ||
+      b.type === "codeBlock" ||
+      b.type === "divider"
+  );
+  if (hasNonHeadingSemantic) return false;
+
+  const paragraphs = blocks.filter((b) => b.type === "paragraph");
+  if (paragraphs.length < 8) return false;
+
+  const texts = paragraphs.map((p) =>
+    p.children
+      .map((c) => (c.type === "text" ? c.text : c.type === "inlineCode" ? c.text : ""))
+      .join("")
+      .trim()
+  );
+  if (texts.some((t) => t.length === 0)) return false;
+
+  // Same log/chat exclusions as the base heuristic.
+  const emojiMarkers = ["✅", "❌", "⚠️", "🔧", "🔀", "📸", "⬆️", "↩️"];
+  if (
+    texts.some(
+      (t) =>
+        emojiMarkers.some((e) => t.includes(e)) ||
+        /^\[?\d{4}-\d{2}-\d{2}|^──|^Total:|^Passed:|^Failed:/i.test(t)
+    )
+  ) {
+    return false;
+  }
+
+  // Wrapped page-width lines: longer minimum than the base tier (40) keeps
+  // chat transcripts and short list-like content out.
+  const lengths = texts.map((t) => t.length);
+  const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+  if (mean < 40 || mean > 120) return false;
+  const variance =
+    lengths.reduce((sum, len) => sum + Math.pow(len - mean, 2), 0) / lengths.length;
+  if (Math.sqrt(variance) / mean > 0.4) return false;
+
+  // Few lines may end a sentence…
+  const terminalRatio =
+    texts.filter((t) => /[.!?]$/.test(t)).length / texts.length;
+  if (terminalRatio > 0.3) return false;
+
+  // …and the decisive signal: most lines must CONTINUE mid-sentence — the
+  // next line starts lowercase. This is what poems and addresses never do.
+  let continuations = 0;
+  for (let i = 1; i < texts.length; i++) {
+    if (/^\p{Ll}/u.test(texts[i])) continuations++;
+  }
+  return continuations / (texts.length - 1) >= 0.5;
+}

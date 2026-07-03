@@ -64,3 +64,9 @@ Projects/
 
 # Tauri dev-run corpus duplicates
 apps/desktop/src-tauri/corpus/
+
+
+# Added by cargo
+
+/target
+apps/desktop/src-tauri/resources/pdfium/
