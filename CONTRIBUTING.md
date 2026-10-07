@@ -356,5 +356,4 @@ Community adapters are published as standalone npm packages. You own the package
 
 ## Questions?
 
-- **Package issues** (UCF spec, detectors, adapter reference, ESLint config) — open on [copy-pasta-ucf/issues](https://github.com/Alpakash/copy-pasta-ucf/issues)
-- **App bugs & feature requests** — use the [Canny board](https://copypastaformaggi.canny.io/feature-requests) or the in-app Feedback button
+Everything goes to one place, [copy-pasta-ucf/issues](https://github.com/Alpakash/copy-pasta-ucf/issues): package issues (UCF spec, detectors, adapter reference, ESLint config), app bugs and feature requests. The in-app **Feedback** button opens a pre-filled issue there.
