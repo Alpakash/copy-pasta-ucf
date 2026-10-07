@@ -14,16 +14,16 @@ These are the open-source packages from [Copy Pasta Formaggi](https://copypastaf
 
 1. Download the latest `.dmg` from the [releases page](https://github.com/Alpakash/copy-pasta-ucf/releases/latest).
 2. Open the DMG and drag **Copy Pasta Formaggi** to **Applications**.
-3. **First launch:** the beta is not yet notarized by Apple. Right-click the app → **Open**, then click **Open** in the dialog (or **System Settings → Privacy & Security → Open Anyway**). This is a one-time step.
+3. **First launch:** the beta is not yet notarized by Apple, so the first double-click shows "Apple could not verify …" with only **Done** and **Move to Trash**. Click **Done**, then **System Settings → Privacy & Security → Open Anyway** (one-time). On macOS 15 and later, right-click → **Open** no longer bypasses this check. This is a one-time step.
 4. Grant **Accessibility** when asked: the app needs it to see your paste shortcut.
 
-The app lives in your menu bar. Click the icon for the main window; right-click it for **Show Window** and **Quit**. Paste with **⌘V** and the app converts the clipboard for the app you paste into; per-app choices are in **Settings → Apps**, and **Safe mode** in the main window pauses conversion.
+The app lives in your menu bar: the icon's menu has **Show Window** and **Quit**, and the main window opens when the app starts. Paste with **⌘V** and the app converts the clipboard for the app you paste into; per-app choices are in **Settings → Apps**, and **Safe mode** in the main window pauses conversion.
 
 **Homebrew:** there is no Homebrew tap yet; use the DMG.
 
 **Windows (preview):** the releases page also has a `*-preview-setup.exe` — unsigned, no in-app updates, far less tested than macOS. Default paste shortcut: Ctrl+Shift+V.
 
-**Uninstall:** right-click the menu-bar icon → **Quit**, drag the app to the Trash, and optionally remove `~/Library/Application Support/com.copy-pasta.desktop`.
+**Uninstall:** menu-bar icon → **Quit**, drag the app to the Trash, and optionally remove `~/Library/Application Support/com.copy-pasta.desktop`.
 
 ## Help and feedback
 
