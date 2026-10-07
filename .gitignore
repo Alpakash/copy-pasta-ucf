@@ -54,6 +54,18 @@ corpus/lessons/
 corpus/patches/
 corpus/.last-judge.json
 corpus/.applied-patches.json
+# Uitvoer van de (uitgezette) LLM-fix-loop: agent-logs, plannen en geheugen
+# met lokale paden horen niet in git (FINDINGS R13, L11).
+corpus/plans/*
+corpus/memory/*
+corpus/sessions/*
+!corpus/plans/.gitkeep
+!corpus/memory/.gitkeep
+!corpus/sessions/.gitkeep
+# Gegenereerde reviewpagina's (index.html, flagged.html) komen uit de inbox en
+# bevatten dus ook niet-goedgekeurde captures; 54 MB (FINDINGS B10, B16, H6).
+corpus/reviews/*
+!corpus/reviews/.gitkeep
 corpus/signals.jsonl
 
 # Local workspace folders
