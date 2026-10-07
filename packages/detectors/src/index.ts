@@ -26,16 +26,53 @@ const singleAsteriskPattern = /(^|\s)\*[^\s*][^*]*\*(?=\s|$)/;
 const singleUnderscorePattern = /(^|\s)_[^_\s][^_]*_(?=\s|$)/;
 const singleTildePattern = /(^|\s)~[^~\s][^~]*~(?=\s|$)/;
 const slackLinkPattern = /<\s*(https?:\/\/|mailto:|tel:)[^>|]+(\|[^>]+)?>/i;
-const markdownFencePattern = /^(```|~~~)/m;
-const markdownHeadingPattern = /^#{1,6}\s+\S+/m;
+const markdownBacktickFencePattern = /^```/m;
+const markdownTildeFencePattern = /^~~~/m;
+const markdownTildeFenceLinePattern = /^\s{0,3}~~~/;
+const markdownHeadingLinePattern = /^#{1,6}\s+\S+/;
+const shebangPattern = /^#!/;
 const markdownListPattern = /^(\s{0,3}[-*+]\s+\S+|\s{0,3}\d+\.\s+\S+)/m;
 const markdownBlockquotePattern = /^>\s+\S+/m;
 const markdownHrPattern = /^(\*\s*){3,}$|^(-\s*){3,}$/m;
-const markdownHeadingPatternGlobal = /^#{1,6}\s+\S+/gm;
 const markdownListPatternGlobal = /^(\s{0,3}[-*+]\s+\S+|\s{0,3}\d+\.\s+\S+)/gm;
 
 export function normalizeForDetection(input: string): string {
   return input.replace(/\r\n?/g, "\n").replace(/^\uFEFF/, "").trim();
+}
+
+/**
+ * E20: een `#`-regel is pas een kopsignaal als hij de vorm van een Markdown-kop
+ * heeft. Een shell- of Python-commentaar (`# install deps`) staat direct boven
+ * de regel waar hij over gaat; een Markdown-kop met één `#` staat los
+ * (gevolgd door een lege regel of het einde van de tekst). `##` en dieper
+ * tellen altijd: die vorm komt in commentaar zelden voor en in Markdown vaak
+ * zonder lege regel ("## Samenvatting\n- punt").
+ */
+function countStrictHeadings(lines: string[]): number {
+  let count = 0;
+  lines.forEach((line, index) => {
+    if (!markdownHeadingLinePattern.test(line)) {
+      return;
+    }
+    if (/^#{2,}/.test(line)) {
+      count += 1;
+      return;
+    }
+    const next = lines[index + 1];
+    if (next === undefined || next.trim().length === 0) {
+      count += 1;
+    }
+  });
+  return count;
+}
+
+/**
+ * E20: `~~~` is ook de uitvoer van een terminal of een scheidingslijn in een
+ * chatbericht; alleen een `~~~` dat weer gesloten wordt is een code-fence.
+ */
+function hasClosedTildeFence(lines: string[]): boolean {
+  const fences = lines.filter((line) => markdownTildeFenceLinePattern.test(line));
+  return fences.length >= 2;
 }
 
 export function looksLikeMarkdown(input: string): boolean {
@@ -44,12 +81,22 @@ export function looksLikeMarkdown(input: string): boolean {
     return false;
   }
 
-  if (markdownFencePattern.test(normalized)) {
+  // Een script met shebang is nooit Markdown, hoeveel `#`-regels het ook heeft.
+  if (shebangPattern.test(normalized)) {
+    return false;
+  }
+
+  const lines = normalized.split("\n");
+
+  if (markdownBacktickFencePattern.test(normalized)) {
+    return true;
+  }
+  if (markdownTildeFencePattern.test(normalized) && hasClosedTildeFence(lines)) {
     return true;
   }
 
-  const headingMatches = normalized.match(markdownHeadingPatternGlobal) ?? [];
-  if (headingMatches.length >= 2) {
+  const strictHeadings = countStrictHeadings(lines);
+  if (strictHeadings >= 2) {
     return true;
   }
 
@@ -77,7 +124,7 @@ export function looksLikeMarkdown(input: string): boolean {
   }
 
   let signals = 0;
-  if (markdownHeadingPattern.test(normalized)) {
+  if (strictHeadings >= 1) {
     signals += 1;
   }
   if (markdownListPattern.test(normalized)) {

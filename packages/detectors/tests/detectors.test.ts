@@ -130,3 +130,61 @@ describe("looksLikePdfReflowStrict", () => {
     expect(looksLikePdfReflowStrict(paragraphLines(address))).toBe(false);
   });
 });
+
+// E20 (P2.8): platte tekst met `#`-commentaar, een los `~~~` of een chatbericht
+// is geen Markdown. Alle teksten zijn synthetisch.
+describe("looksLikeMarkdown", () => {
+  const lines = (...parts: string[]) => parts.join("\n");
+
+  it("ziet een shell-script met #-commentaar niet als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("# install deps", "npm install", "# build", "npm run prepare"))).toBe(false);
+  });
+
+  it("ziet Python-commentaar niet als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(
+      looksLikeMarkdown(lines("# Load the data", "df = read_csv(path)", "# Train the model", "model.fit(df)"))
+    ).toBe(false);
+  });
+
+  it("ziet een script met shebang nooit als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("#!/bin/sh", "# setup", "", "# run", "", "make"))).toBe(false);
+  });
+
+  it("ziet een changelog in platte tekst niet als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("1.2.0", "* fix: login", "1.1.0", "* feat: export"))).toBe(false);
+  });
+
+  it("ziet een los ~~~ (terminal of scheidingslijn) niet als code-fence", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("Uitslag:", "~~~", "alles groen"))).toBe(false);
+  });
+
+  it("ziet ~~~ met sluit-fence wél als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("Voorbeeld:", "~~~", "echo hi", "~~~"))).toBe(true);
+  });
+
+  it("ziet een ```-fence als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("Voorbeeld:", "```", "echo hi", "```"))).toBe(true);
+  });
+
+  it("ziet twee losse koppen (gevolgd door een lege regel) als Markdown", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("# Titel", "", "Tekst.", "", "# Tweede", "", "Meer tekst."))).toBe(true);
+  });
+
+  it("ziet ## zonder lege regel erna als kop (LLM-uitvoer)", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("## Samenvatting", "- punt een", "- punt twee"))).toBe(true);
+  });
+
+  it("ziet een chatbericht met een lijstje nog steeds als Markdown (de lijst is echt)", async () => {
+    const { looksLikeMarkdown } = await import("../src/index.js");
+    expect(looksLikeMarkdown(lines("Hi team,", "please review:", "", "- item one", "- item two", "", "Thanks"))).toBe(true);
+  });
+});
