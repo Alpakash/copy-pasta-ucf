@@ -21,7 +21,9 @@ const bulletSymbolPattern = /(^|\n)\s*•\s+\S+/;
 const hrPattern = /(^|\n)(-{3,}|\*{3,}|_{3,})(\s|$)/;
 const blockquotePattern = /(^|\n)\s*(>|&gt;)\s+\S+/;
 const emphasisPattern = /(\*\*[^*]+\*\*|_[^_]+_)/;
-const markdownLinkPattern = /\[[^\]]+\]\([^)]+\)/;
+// [^\[\]] in plaats van [^\]]: zo stopt elke poging bij de volgende "[" en is
+// de scan lineair op een tekst vol "[" (FINDINGS E13(3)).
+const markdownLinkPattern = /\[[^[\]]+\]\([^()]+\)/;
 const singleAsteriskPattern = /(^|\s)\*[^\s*][^*]*\*(?=\s|$)/;
 const singleUnderscorePattern = /(^|\s)_[^_\s][^_]*_(?=\s|$)/;
 const singleTildePattern = /(^|\s)~[^~\s][^~]*~(?=\s|$)/;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectFormat, normalizeForDetection } from "../src/index.js";
+import { detectFormat, looksLikeMarkdown, normalizeForDetection } from "../src/index.js";
 
 const markdownSample = [
   "# Sample Heading",
@@ -128,6 +128,19 @@ describe("looksLikePdfReflowStrict", () => {
     const { looksLikePdfReflowStrict } = await import("../src/index.js");
     const address = ["Jan Jansen", "Kerkstraat 12", "1234 AB Amsterdam", "Nederland"];
     expect(looksLikePdfReflowStrict(paragraphLines(address))).toBe(false);
+  });
+});
+
+// FINDINGS E13(3): de linkregex scande bij elke "[" tot het einde (20k "[" → 1 s).
+describe("looksLikeMarkdown is lineair op rechte haken (E13)", () => {
+  it("herkent een lijst met een link nog steeds", () => {
+    expect(looksLikeMarkdown("- zie [docs](https://example.invalid/d)\n- en [meer](https://example.invalid/m)")).toBe(true);
+  });
+
+  it("blijft snel op 20k rechte haken", () => {
+    const started = performance.now();
+    expect(looksLikeMarkdown(`- a\n- b\n${"[".repeat(20_000)}`)).toBe(false);
+    expect(performance.now() - started).toBeLessThan(100);
   });
 });
 
