@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> **Looking for the app?** [Download Copy Pasta Formaggi for macOS](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — copy text anywhere, paste it perfectly.
+> **Looking for the app?** [Download Copy Pasta Formaggi for macOS](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — copy text anywhere, paste it perfectly. The same release page has a **Windows preview** installer (`*-preview-setup.exe`): unsigned, no in-app updates, less tested than macOS.
 >
 > **First-time launch:** Right-click the app → **Open**, then click **Open** in the dialog. macOS Gatekeeper blocks unsigned apps — this is a one-time step. (The app is not signed with an Apple Developer ID during the beta.)
 
@@ -57,7 +57,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Links
 
-- [Download the app](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — macOS, free beta
+- [Download the app](https://github.com/Alpakash/copy-pasta-ucf/releases/latest) — macOS, free beta (plus a Windows preview installer)
 - [Copy Pasta Formaggi](https://copypastaformaggi.com) — marketing site
 - [Contributing Guide](CONTRIBUTING.md) — how to write adapters
 - [Package issues](https://github.com/Alpakash/copy-pasta-ucf/issues) — bugs in UCF spec, detectors, adapters
