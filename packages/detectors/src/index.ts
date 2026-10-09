@@ -142,6 +142,90 @@ export function looksLikeMarkdown(input: string): boolean {
   return signals >= 2;
 }
 
+/**
+ * Soorten Markdown-opmaak die `findMarkdownMarkup` herkent: de soorten die een app die Markdown niet opmaakt
+ * letterlijk toont (`# `, `> `, `[tekst](url)`, `![alt](url)`, `_x_`).
+ */
+export type MarkdownMarkup = "heading" | "quote" | "link" | "image" | "italic";
+
+const atxHeadingMarkupPattern = /^ {0,3}#{1,6}[ \t]+\S/m;
+const quoteMarkupPattern = /^ {0,3}>[ \t]?\S/m;
+// [^[\]] in plaats van [^\]]: zo stopt elke poging bij de volgende "[" en is de scan lineair op een tekst vol "["
+// (FINDINGS E13(3)). Hetzelfde geldt voor het URL-deel: [^)[\s] in plaats van [^)\s], anders eet elke "](" de rest van de
+// regel op tot een ")" en is de scan kwadratisch op "[a](b" x n (200 KB: 7,5 s; met "![a](b" 29 s; tweede review van
+// #144). Een "[" in de URL telt daardoor niet als link (bij twijfel geen opmaak); een URL met "(bar)" erin wel.
+const imageMarkupPattern = /!\[[^[\]\n]*\]\([^)[\s]+(?:[ \t]+"[^"\n]*")?\)/;
+const linkMarkupPattern = /\[[^[\]\n]+\]\([^)[\s]+(?:[ \t]+"[^"\n]*")?\)/;
+// Cursief met één teken: de opener staat aan het begin van een regel, na witruimte of na een haakje of aanhalingsteken,
+// de sluiter staat vóór een leesteken of het einde van de regel en direct na een teken dat geen witruimte is. Daarmee
+// blijven `snake_case_naam`, `2 * 3 * 4`, `build/*`, een lijst met `* ` en `**vet**` buiten beeld.
+const underscoreItalicPattern = /(^|[\s(["'])_[^_\s](?:[^_\n]*[^_\s])?_(?=[\s.,;:!?)\]"']|$)/m;
+const asteriskItalicPattern = /(^|[\s(["'])\*[^*\s](?:[^*\n]*[^*\s])?\*(?=[\s.,;:!?)\]"']|$)/m;
+const codeFenceOpenPattern = /^ {0,3}(`{3,}|~{3,})/;
+
+/**
+ * Haalt codeblokken (``` of ~~~; een niet gesloten blok loopt tot het einde) en inline code weg. Wat daarin staat is met
+ * opzet letterlijk, dus geen opmaak. Geeft de overgebleven tekst terug, regel voor regel.
+ */
+function withoutCode(text: string): string {
+  const kept: string[] = [];
+  let fenceChar = "";
+  let fenceLength = 0;
+  for (const line of text.split("\n")) {
+    const open = codeFenceOpenPattern.exec(line);
+    if (fenceChar === "") {
+      if (open) {
+        fenceChar = open[1][0];
+        fenceLength = open[1].length;
+        continue;
+      }
+      kept.push(line);
+      continue;
+    }
+    // In een blok: alleen een regel met uitsluitend een fence van dezelfde soort en minstens dezelfde lengte sluit hem.
+    if (open && open[1][0] === fenceChar && open[1].length >= fenceLength && line.slice(open[0].length).trim() === "") {
+      fenceChar = "";
+      fenceLength = 0;
+    }
+  }
+  return kept.join("\n").replace(/`[^`\n]*`/g, "");
+}
+
+/**
+ * Welke soorten Markdown-opmaak staan er in deze tekst, buiten codeblokken en inline code (P2.58, E90)? Voor een doel
+ * dat Markdown letterlijk toont (Telegram): een kop, een citaat, een link, een afbeelding of cursief met één teken staat
+ * daar als `# `, `> `, `[tekst](url)`, `![alt](url)` en `_x_`, en de encoder van het doel herschrijft ze. Een lijst,
+ * `**vet**`, `~~doorgehaald~~`, inline code en een kale URL of een mailadres staan er al goed bij en horen er niet bij.
+ *
+ * Alleen wat zeker opmaak is: bij twijfel (een `*` of `_` in een woord, een `*` met een spatie erna, een `[` zonder
+ * `(url)`) geen opmaak, want dan blijft de tekst staan. De volgorde is vast: heading, quote, image, link, italic.
+ */
+export function findMarkdownMarkup(input: string): MarkdownMarkup[] {
+  const normalized = normalizeForDetection(input);
+  if (!normalized) {
+    return [];
+  }
+  const text = withoutCode(normalized);
+  const found: MarkdownMarkup[] = [];
+  if (atxHeadingMarkupPattern.test(text)) {
+    found.push("heading");
+  }
+  if (quoteMarkupPattern.test(text)) {
+    found.push("quote");
+  }
+  if (imageMarkupPattern.test(text)) {
+    found.push("image");
+  }
+  // Een afbeelding bevat `[alt](url)`: eerst haar weg, anders telt elke afbeelding ook als link.
+  if (linkMarkupPattern.test(text.replace(new RegExp(imageMarkupPattern.source, "g"), ""))) {
+    found.push("link");
+  }
+  if (underscoreItalicPattern.test(text) || asteriskItalicPattern.test(text)) {
+    found.push("italic");
+  }
+  return found;
+}
+
 export function detectFormat(input: string): DetectionResult {
   const normalized = normalizeForDetection(input);
 

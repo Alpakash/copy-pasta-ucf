@@ -67,6 +67,11 @@ corpus/sessions/*
 corpus/reviews/*
 !corpus/reviews/.gitkeep
 corpus/signals.jsonl
+# Live-oracle (P2.39): de rapporten (corpus/live/*.md en *.json) horen wel in git; de
+# schermafbeeldingen per run (corpus/live/<datum>-<doel>/) blijven lokaal. De Swift-helpers
+# worden op de Mac gecompileerd (scripts/live/build.sh).
+corpus/live/*/
+scripts/live/.bin/
 
 # Local workspace folders
 Projects/
