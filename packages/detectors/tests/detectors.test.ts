@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { eisLineair, n } from "@copy-pasta/fixtures";
 import { detectFormat, findMarkdownMarkup, looksLikeMarkdown, normalizeForDetection } from "../src/index.js";
 
 const markdownSample = [
@@ -137,10 +138,11 @@ describe("looksLikeMarkdown is lineair op rechte haken (E13)", () => {
     expect(looksLikeMarkdown("- zie [docs](https://example.invalid/d)\n- en [meer](https://example.invalid/m)")).toBe(true);
   });
 
-  it("blijft snel op 20k rechte haken", () => {
-    const started = performance.now();
-    expect(looksLikeMarkdown(`- a\n- b\n${"[".repeat(20_000)}`)).toBe(false);
-    expect(performance.now() - started).toBeLessThan(100);
+  it("blijft lineair op 20k rechte haken", () => {
+    // Groeitoets (P2.97): op de volle grootte en op een achtste ervan, zie `packages/fixtures/src/groei.ts`.
+    // Een run kost 0,014 ms op een achtste: 25 maal achter elkaar (`herhaal`, zie `groei.ts`), anders blijft een kwadratisch pad onder de marge.
+    const { uitvoer } = eisLineair((s) => `- a\n- b\n${"[".repeat(n(20_000, s))}`, looksLikeMarkdown, { herhaal: 25 });
+    expect(uitvoer).toBe(false);
   });
 });
 
@@ -302,21 +304,23 @@ describe("findMarkdownMarkup", () => {
   });
 
   // Lineair op vijandige invoer, zoals looksLikeMarkdown (E13(3)). Gemeten voor de linkregex op 50.000 rechte haken:
-  // kwadratisch (`[^\]]` in plaats van `[^[\]]`) 1,5 s, lineair 0,1 ms; de grens is dus ruim. Veel groter maken helpt niet,
-  // want een kwadratische scan blokkeert de testrunner dan zonder dat de timeout van de test hem kan onderbreken.
+  // kwadratisch (`[^\]]` in plaats van `[^[\]]`) 1,5 s, lineair 0,1 ms. Veel groter maken helpt niet, want een kwadratische
+  // scan blokkeert de testrunner dan zonder dat de timeout van de test hem kan onderbreken. De test is een groeitoets
+  // (P2.97, `packages/fixtures/src/groei.ts`): de volle invoer en een achtste ervan, zonder grens in milliseconden.
   // Het URL-deel van een link of afbeelding moet ook bij de volgende `[` stoppen (tweede review van #144): `[a](b` x
   // 20.000 duurde met `[^)\s]+` zo'n 2 s en `![a](b` x 20.000 zo'n 7 s, op de main thread van de webview.
   it.each([
-    ["rechte haken", "[".repeat(50_000)],
-    ["afbeeldingen zonder sluiting", "![".repeat(25_000)],
-    ["links zonder sluit-haakje", "[a](b".repeat(20_000)],
-    ["afbeeldingen zonder sluit-haakje", "![a](b".repeat(20_000)],
-    ["openers van cursief zonder sluiter", "_a ".repeat(20_000)],
-    ["sterretjes met een letter erachter", "*a ".repeat(20_000)],
-    ["backticks", "`".repeat(50_000)],
-  ] as const)("blijft lineair op %s", (_naam, tekst) => {
-    const started = performance.now();
-    expect(findMarkdownMarkup(tekst)).toEqual([]);
-    expect(performance.now() - started).toBeLessThan(250);
+    // De laatste kolom is `herhaal`: een run op een achtste kost 0,007 tot 0,23 ms, onder of vlak boven de marge van 2 ms
+    // (`groei.ts`, gevoeligheid); herhaald komt elke meting boven ongeveer 0,3 ms.
+    ["rechte haken", (s: number) => "[".repeat(n(50_000, s)), 10],
+    ["afbeeldingen zonder sluiting", (s: number) => "![".repeat(n(25_000, s)), 10],
+    ["links zonder sluit-haakje", (s: number) => "[a](b".repeat(n(20_000, s)), 10],
+    ["afbeeldingen zonder sluit-haakje", (s: number) => "![a](b".repeat(n(20_000, s)), 10],
+    ["openers van cursief zonder sluiter", (s: number) => "_a ".repeat(n(20_000, s)), 10],
+    ["sterretjes met een letter erachter", (s: number) => "*a ".repeat(n(20_000, s)), 10],
+    ["backticks", (s: number) => "`".repeat(n(50_000, s)), 50],
+  ] as const)("blijft lineair op %s", (_naam, maak, herhaal) => {
+    const { uitvoer } = eisLineair(maak, findMarkdownMarkup, { herhaal });
+    expect(uitvoer).toEqual([]);
   });
 });
