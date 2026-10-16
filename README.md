@@ -21,7 +21,7 @@ The app lives in your menu bar: the icon's menu has **Show Window** and **Quit**
 
 **Homebrew:** there is no Homebrew tap yet; use the DMG.
 
-**Windows (preview):** the releases page also has a `*-preview-setup.exe` — unsigned, no in-app updates, far less tested than macOS. Default paste shortcut: Ctrl+Shift+V.
+**Windows (preview):** the releases page also has a `*-preview-setup.exe` — unsigned, no in-app updates, far less tested than macOS. Default paste shortcut: Ctrl+V.
 
 **Uninstall:** menu-bar icon → **Quit**, drag the app to the Trash, and optionally remove `~/Library/Application Support/com.copy-pasta.desktop`.
 

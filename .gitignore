@@ -71,6 +71,9 @@ corpus/signals.jsonl
 # schermafbeeldingen per run (corpus/live/<datum>-<doel>/) blijven lokaal. De Swift-helpers
 # worden op de Mac gecompileerd (scripts/live/build.sh).
 corpus/live/*/
+# Uitzondering (P2.111): de klembord-captures van echte bron-apps (corpus/live/captures/) zijn bewijs, geen
+# schermafbeelding, en horen in git. Hun bytes blijven zoals ze zijn (`.gitattributes`: `-text`).
+!corpus/live/captures/
 scripts/live/.bin/
 
 # Local workspace folders
@@ -87,3 +90,6 @@ apps/desktop/src-tauri/corpus/
 
 /target
 apps/desktop/src-tauri/resources/pdfium/
+
+# De geschiedenis van de app (P2.151, R3): exe-paden en previews van echte plakken; nooit in git, ook niet uit een Windows-meting.
+conversion-log.json
