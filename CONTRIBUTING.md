@@ -1,4 +1,37 @@
-# Contributing to Copy Pasta Formaggi
+# Bijdragen aan Copy Pasta Formaggi
+
+Welkom. Deze repo is nog privé en wordt straks openbaar; tot die tijd werken we in
+het Nederlands. Dit bestand is de voordeur: het zegt hoe je begint en verwijst naar
+de plek waar de regels staan. Er staan hier zelf geen regels, zodat het niet kan
+verouderen.
+
+**Waar de regels staan:**
+- [`docs/WAY_OF_WORKING.md`](docs/WAY_OF_WORKING.md): hoe we werken en wie wat mag,
+  bindend. Voor bijdragers vooral §14 (taken kiezen, je eigen ID-blok, taal, review,
+  mergen, besluiten).
+- [`CLAUDE.md`](CLAUDE.md): de korte versie en de poorten. Je AI-tool (Claude Code)
+  leest dit bestand vanzelf.
+- [`docs/PLAN.md`](docs/PLAN.md): de taken, met bovenaan "Wacht op human-decision".
+  [`docs/FINDINGS.md`](docs/FINDINGS.md) en [`docs/DECISIONS.md`](docs/DECISIONS.md):
+  wat we weten en wat besloten is.
+
+**Zo begin je:**
+1. Clone de repo en draai `pnpm install --frozen-lockfile` en
+   `pnpm --filter "./packages/*" -r build`. De app draai je met
+   `pnpm --filter desktop tauri dev` (macOS vraagt om Toegankelijkheid).
+2. Kies een open taak in `docs/PLAN.md`, of maak er in je PR zelf een aan met een ID
+   uit je eigen blok (WAY_OF_WORKING §14).
+3. Werk op een branch, schrijf eerst een test die faalt, en open een PR als concept
+   (draft) met de taak-ID in de titel. De PR-tekst volgt het sjabloon (WAY_OF_WORKING §5).
+4. Maak de poorten lokaal groen (de pre-push-hook draait ze; zie CLAUDE.md, "Poorten")
+   en zet de PR dan op Ready for review. `main` is beschermd: `CI-poort` moet groen zijn.
+5. Laat een ander dan de maker reviewen (een aparte AI-reviewrun telt). Na "Klaar om te
+   mergen" en een groene `CI-poort` merget een maintainer de PR (WAY_OF_WORKING §1;
+   ben je zelf maintainer, dan mag je dat zelf).
+
+---
+
+# Writing a UCF adapter (English guide)
 
 Thanks for your interest in contributing. This guide walks you through writing a UCF adapter — the building block that adds support for a new format.
 
