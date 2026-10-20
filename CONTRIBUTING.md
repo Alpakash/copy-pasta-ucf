@@ -23,7 +23,8 @@ verouderen.
    uit je eigen blok (WAY_OF_WORKING §14).
 3. Werk op een branch, schrijf eerst een test die faalt, en open een PR als concept
    (draft) met de taak-ID in de titel. De PR-tekst volgt het sjabloon (WAY_OF_WORKING §5).
-4. Maak de poorten lokaal groen (de pre-push-hook draait ze; zie CLAUDE.md, "Poorten")
+4. Zet eenmalig de pre-push-hook aan (`git config core.hooksPath .githooks`); die draait de poorten
+   vóór elke push (zie CLAUDE.md, "Poorten"). Maak ze lokaal groen
    en zet de PR dan op Ready for review. `main` is beschermd: `CI-poort` moet groen zijn.
 5. Laat een ander dan de maker reviewen (een aparte AI-reviewrun telt). Na "Klaar om te
    mergen" en een groene `CI-poort` merget een maintainer de PR (WAY_OF_WORKING §1;
